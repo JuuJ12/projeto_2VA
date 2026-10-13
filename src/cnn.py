@@ -1,24 +1,3 @@
-"""
-cnn.py
-======
-Pipeline CNN: MobileNetV2 com transfer learning (backbone congelado).
-
-Arquitetura (ADR-0002):
-    MobileNetV2 pré-treinado no ImageNet (backbone congelado)
-    → embedding 1280-dim
-    → nn.Dropout(0.2)
-    → nn.Linear(1280, 10)
-
-Treino:
-    Adam lr=1e-3, 20 épocas, early stopping (paciência 5 no val loss)
-    Augmentation no treino: flip horizontal, rotação ±10°
-    Batch size 32, imagens 224×224 (ADR-0001)
-
-Decisões registradas:
-    ADR-0001 — 224×224 uniforme
-    ADR-0002 — transfer learning, backbone congelado
-    GLOSSARY — CNN, Transfer learning, Backbone, Tempo de inferência
-"""
 
 import os
 import time
@@ -33,30 +12,14 @@ from PIL import Image
 
 from src.data_utils import CLASS_NAMES
 
-# Diretório padrão para salvar o modelo
 MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results", "models")
 BEST_MODEL_PATH = os.path.join(MODELS_DIR, "best_cnn.pt")
 
 
-# ---------------------------------------------------------------------------
-# Dataset customizado
-# ---------------------------------------------------------------------------
 
 class GameScreenshotDataset(Dataset):
-    """
-    Dataset PyTorch para screenshots de jogos.
-
-    Lê imagens do disco sob demanda (sem pré-carregar tudo na RAM),
-    aplicando as transformações definidas em `transform`.
-    """
 
     def __init__(self, df: pd.DataFrame, transform=None):
-        """
-        Parâmetros
-        ----------
-        df        : DataFrame com colunas [path, label_idx].
-        transform : torchvision.transforms a aplicar.
-        """
         self.df        = df.reset_index(drop=True)
         self.transform = transform
 
@@ -72,11 +35,7 @@ class GameScreenshotDataset(Dataset):
         return image, label
 
 
-# ---------------------------------------------------------------------------
-# Transformações (augmentation no treino, apenas normalização em val/teste)
-# ---------------------------------------------------------------------------
 
-# Média e desvio padrão do ImageNet (necessários para pesos pré-treinados)
 _IMAGENET_MEAN = [0.485, 0.456, 0.406]
 _IMAGENET_STD  = [0.229, 0.224, 0.225]
 
@@ -95,33 +54,13 @@ EVAL_TRANSFORM = transforms.Compose([
 ])
 
 
-# ---------------------------------------------------------------------------
-# Modelo
-# ---------------------------------------------------------------------------
 
 def build_model(num_classes: int = 10) -> nn.Module:
-    """
-    Constrói o modelo MobileNetV2 com backbone congelado.
-
-    - Baixa pesos pré-treinados no ImageNet (primeira execução faz download)
-    - Congela TODOS os parâmetros do backbone
-    - Substitui o classificador original por: Dropout(0.2) → Linear(1280, 10)
-
-    Parâmetros
-    ----------
-    num_classes : int — número de classes (padrão: 10 jogos).
-
-    Retorna
-    -------
-    nn.Module com apenas o classifier treinável.
-    """
     model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.IMAGENET1K_V1)
 
-    # Congela backbone (features)
     for param in model.features.parameters():
         param.requires_grad = False
 
-    # Substitui o classificador (in_features = 1280 no MobileNetV2)
     in_features = model.classifier[1].in_features
     model.classifier = nn.Sequential(
         nn.Dropout(p=0.2),
@@ -132,13 +71,9 @@ def build_model(num_classes: int = 10) -> nn.Module:
 
 
 def count_trainable_params(model: nn.Module) -> int:
-    """Retorna o número de parâmetros treináveis do modelo."""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-# ---------------------------------------------------------------------------
-# DataLoaders
-# ---------------------------------------------------------------------------
 
 def get_dataloaders(
     train_df: pd.DataFrame,
@@ -147,20 +82,6 @@ def get_dataloaders(
     batch_size: int = 32,
     num_workers: int = 0,
 ) -> dict:
-    """
-    Cria DataLoaders para treino, validação e teste.
-
-    Parâmetros
-    ----------
-    train_df, val_df, test_df : DataFrames do split.
-    batch_size : int (padrão: 32).
-    num_workers : int — workers para carregamento paralelo.
-                  0 = processo principal (mais seguro no Windows).
-
-    Retorna
-    -------
-    dict com chaves "train", "val", "test" → DataLoader.
-    """
     loaders = {
         "train": DataLoader(
             GameScreenshotDataset(train_df, TRAIN_TRANSFORM),
@@ -185,9 +106,6 @@ def get_dataloaders(
     return loaders
 
 
-# ---------------------------------------------------------------------------
-# Treino
-# ---------------------------------------------------------------------------
 
 def train_cnn(
     model: nn.Module,
@@ -198,26 +116,6 @@ def train_cnn(
     save_path: str = BEST_MODEL_PATH,
     device: torch.device | None = None,
 ) -> tuple[nn.Module, dict]:
-    """
-    Loop de treino com early stopping no val loss.
-
-    Parâmetros
-    ----------
-    model     : nn.Module (saída de build_model).
-    loaders   : dict com "train" e "val" DataLoaders.
-    epochs    : número máximo de épocas (padrão: 20).
-    lr        : learning rate do Adam (padrão: 1e-3).
-    patience  : épocas sem melhora antes de parar (padrão: 5).
-    save_path : caminho para salvar o melhor modelo.
-    device    : torch.device. Se None, detecta automaticamente (CUDA > CPU).
-
-    Retorna
-    -------
-    (model_best, history)
-        model_best : modelo com os melhores pesos (estado do best val loss)
-        history    : dict com listas "train_loss", "val_loss",
-                     "train_acc", "val_acc"
-    """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[cnn] Dispositivo: {device}")
@@ -234,7 +132,6 @@ def train_cnn(
     best_state = None
 
     for epoch in range(1, epochs + 1):
-        # --- Fase de treino ---
         model.train()
         train_loss, train_correct, train_total = 0.0, 0, 0
         t_epoch = time.time()
@@ -255,7 +152,6 @@ def train_cnn(
         train_loss /= train_total
         train_acc   = train_correct / train_total
 
-        # --- Fase de validação ---
         model.eval()
         val_loss, val_correct, val_total = 0.0, 0, 0
 
@@ -285,7 +181,6 @@ def train_cnn(
             f"({elapsed:.1f}s)"
         )
 
-        # --- Early stopping ---
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             epochs_no_improve = 0
@@ -300,7 +195,6 @@ def train_cnn(
                 print(f"[cnn] Early stopping na época {epoch}.")
                 break
 
-    # Restaura melhor estado
     if best_state is not None:
         model.load_state_dict(best_state)
         model = model.to(device)
@@ -308,31 +202,12 @@ def train_cnn(
     return model, history
 
 
-# ---------------------------------------------------------------------------
-# Inferência
-# ---------------------------------------------------------------------------
 
 def predict_cnn(
     model: nn.Module,
     loader: DataLoader,
     device: torch.device | None = None,
 ) -> tuple[np.ndarray, float]:
-    """
-    Executa inferência no conjunto de teste e mede o tempo.
-
-    Parâmetros
-    ----------
-    model  : nn.Module (melhor estado carregado).
-    loader : DataLoader do conjunto de teste.
-    device : torch.device. Se None, detecta automaticamente.
-
-    Retorna
-    -------
-    (y_pred, inference_time_ms)
-        y_pred             : np.ndarray (n,) de rótulos preditos
-        inference_time_ms  : tempo total de inferência em milissegundos
-                             (apenas o forward pass, sem carregar dados do disco)
-    """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
@@ -351,7 +226,7 @@ def predict_cnn(
             all_preds.append(preds)
 
     y_pred = np.concatenate(all_preds)
-    return y_pred, total_time * 1000  # ms
+    return y_pred, total_time * 1000
 
 
 def load_cnn_model(
@@ -359,13 +234,6 @@ def load_cnn_model(
     num_classes: int = 10,
     device: torch.device | None = None,
 ) -> nn.Module:
-    """
-    Carrega o melhor modelo salvo durante o treino.
-
-    Retorna
-    -------
-    nn.Module em modo eval, no device especificado.
-    """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = build_model(num_classes=num_classes)
@@ -380,14 +248,6 @@ def plot_training_history(
     history: dict,
     out_path: str | None = None,
 ) -> None:
-    """
-    Plota as curvas de loss e acurácia durante o treino da CNN.
-
-    Parâmetros
-    ----------
-    history  : dict retornado por train_cnn.
-    out_path : caminho para salvar a figura. Se None, usa FIGURES_DIR.
-    """
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
