@@ -149,6 +149,3 @@ A suavização espacial utiliza **convolução Gaussiana 1D separável implement
 - **Frequência Espacial (8 dims)**: Energia espectral radial calculada a partir da Transformada Rápida de Fourier 2D (`np.fft.fft2`).
 
 ---
-
-## 👥 Autores
-- Alunos da disciplina de Processamento de Imagens
