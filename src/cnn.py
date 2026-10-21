@@ -187,7 +187,7 @@ def train_cnn(
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
             torch.save(best_state, save_path)
-            print(f"    ✓ Melhor modelo salvo (val_loss={best_val_loss:.4f})")
+            print(f"    [OK] Melhor modelo salvo (val_loss={best_val_loss:.4f})")
         else:
             epochs_no_improve += 1
             print(f"    Sem melhora há {epochs_no_improve}/{patience} épocas.")

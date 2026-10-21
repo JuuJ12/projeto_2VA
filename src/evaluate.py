@@ -143,7 +143,7 @@ def analyze_errors(
     print(f"\n[{method_name}] Top-{top_k} confusões:")
     for e in errors:
         print(
-            f"  {e['true_class']:>18} → {e['pred_class']:<18}"
+            f"  {e['true_class']:>18} -> {e['pred_class']:<18}"
             f"  {e['count']:>3} casos ({e['pct_of_true']*100:.1f}% da classe)"
         )
     return errors

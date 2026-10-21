@@ -54,6 +54,10 @@ def parse_args():
         help="Épocas máximas de treino da CNN (padrão: 20)"
     )
     parser.add_argument(
+        "--patience", type=int, default=4,
+        help="Paciência do early stopping da CNN (padrão: 4)"
+    )
+    parser.add_argument(
         "--batch-size", type=int, default=32,
         help="Tamanho do batch da CNN (padrão: 32)"
     )
@@ -114,13 +118,13 @@ def run_classical(train_df, test_df, retrain: bool) -> dict:
     knn_metrics = compute_metrics(y_test, preds["knn_pred"], "k-NN (clássico)")
     knn_metrics["inference_time_ms"] = preds["knn_time_ms"]
     save_metrics_csv(knn_metrics, "knn")
-    plot_confusion_matrix(y_test, preds["knn_pred"], title="Matriz de Confusão — k-NN")
+    plot_confusion_matrix(y_test, preds["knn_pred"], title="Matriz de Confusao - k-NN")
     analyze_errors(y_test, preds["knn_pred"], method_name="k-NN")
 
-    svm_metrics = compute_metrics(y_test, preds["svm_pred"], "SVM (clássico)")
+    svm_metrics = compute_metrics(y_test, preds["svm_pred"], "SVM (classico)")
     svm_metrics["inference_time_ms"] = preds["svm_time_ms"]
     save_metrics_csv(svm_metrics, "svm")
-    plot_confusion_matrix(y_test, preds["svm_pred"], title="Matriz de Confusão — SVM")
+    plot_confusion_matrix(y_test, preds["svm_pred"], title="Matriz de Confusao - SVM")
     analyze_errors(y_test, preds["svm_pred"], method_name="SVM")
 
     np.save(os.path.join(MODELS_DIR, "X_test.npy"), X_test)
@@ -132,7 +136,7 @@ def run_classical(train_df, test_df, retrain: bool) -> dict:
 
 def run_cnn(train_df, val_df, test_df, args) -> dict:
     print("\n" + "=" * 55)
-    print("  CNN — MobileNetV2 (transfer learning)")
+    print("  CNN - MobileNetV2 (transfer learning)")
     print("=" * 55)
 
     loaders = get_dataloaders(
@@ -145,11 +149,11 @@ def run_cnn(train_df, val_df, test_df, args) -> dict:
     else:
         model = build_model(num_classes=10)
         from src.cnn import count_trainable_params
-        print(f"[main] Parâmetros treináveis: {count_trainable_params(model):,}")
+        print(f"[main] Parametros treinaveis: {count_trainable_params(model):,}")
         model, history = train_cnn(
             model, loaders,
             epochs=args.epochs,
-            patience=5,
+            patience=args.patience if hasattr(args, 'patience') else 4,
             save_path=CNN_MODEL_PATH,
         )
         plot_training_history(history)
@@ -160,7 +164,7 @@ def run_cnn(train_df, val_df, test_df, args) -> dict:
     cnn_metrics = compute_metrics(y_test_arr, y_pred_cnn, "CNN (MobileNetV2)")
     cnn_metrics["inference_time_ms"] = inf_time_ms
     save_metrics_csv(cnn_metrics, "cnn")
-    plot_confusion_matrix(y_test_arr, y_pred_cnn, title="Matriz de Confusão — CNN")
+    plot_confusion_matrix(y_test_arr, y_pred_cnn, title="Matriz de Confusao - CNN")
     analyze_errors(y_test_arr, y_pred_cnn, method_name="CNN")
 
     return {"cnn": cnn_metrics, "y_test": y_test_arr}

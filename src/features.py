@@ -98,15 +98,45 @@ def fourier_radial(img_gray: np.ndarray, n_bands: int = FOURIER_N_BANDS) -> np.n
 
 
 
+def gradient_features(img_gray: np.ndarray) -> np.ndarray:
+    """
+    Estatísticas de bordas por gradiente espacial (Sobel).
+    Calcula:
+      - Magnitude média do gradiente (intensidade global de bordas)
+      - Desvio padrão da magnitude (variação/contraste de bordas)
+      - Densidade de bordas (fração de pixels com magnitude > limiar)
+      - Histograma de orientações do gradiente ponderado pela magnitude (8 bins: 0 a 180°)
+    Total: 1 + 1 + 1 + 8 = 11 dimensões.
+    """
+    gx = cv2.Sobel(img_gray, cv2.CV_64F, 1, 0, ksize=3)
+    gy = cv2.Sobel(img_gray, cv2.CV_64F, 0, 1, ksize=3)
+    magnitude = np.sqrt(gx**2 + gy**2)
+    angle = (np.arctan2(gy, gx) * (180.0 / np.pi)) % 180.0
+
+    mean_mag = float(np.mean(magnitude))
+    std_mag = float(np.std(magnitude))
+    edge_density = float(np.mean(magnitude > 30.0))
+
+    hist_angle, _ = np.histogram(angle, bins=8, range=(0, 180), weights=magnitude)
+    total_angle = hist_angle.sum()
+    if total_angle > 0:
+        hist_angle /= total_angle
+
+    stats = np.array([mean_mag / 100.0, std_mag / 100.0, edge_density], dtype=np.float32)
+    return np.concatenate([stats, hist_angle.astype(np.float32)])
+
+
+
 def extract_features(img_bgr: np.ndarray) -> np.ndarray:
     img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
 
-    hsv_feat     = hsv_histogram(img_bgr)
-    lbp_feat     = lbp_histogram(img_gray)
-    glcm_feat    = glcm_features(img_gray)
-    fourier_feat = fourier_radial(img_gray)
+    hsv_feat      = hsv_histogram(img_bgr)
+    lbp_feat      = lbp_histogram(img_gray)
+    glcm_feat     = glcm_features(img_gray)
+    fourier_feat  = fourier_radial(img_gray)
+    gradient_feat = gradient_features(img_gray)
 
-    return np.concatenate([hsv_feat, lbp_feat, glcm_feat, fourier_feat])
+    return np.concatenate([hsv_feat, lbp_feat, glcm_feat, fourier_feat, gradient_feat])
 
 
 def feature_names() -> list[str]:
@@ -118,5 +148,8 @@ def feature_names() -> list[str]:
         for angle_deg in [0, 45, 90, 135]:
             names += [f"glcm_{prop}_{angle_deg}"]
     names += [f"fourier_band_{i}" for i in range(FOURIER_N_BANDS)]
+    names += ["grad_mean_mag", "grad_std_mag", "grad_edge_density"]
+    names += [f"grad_angle_bin_{i}" for i in range(8)]
     return names
+
 
