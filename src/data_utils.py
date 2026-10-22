@@ -2,6 +2,7 @@
 import os
 import json
 import random
+from pathlib import PureWindowsPath
 
 import numpy as np
 import pandas as pd
@@ -119,6 +120,26 @@ def load_splits(splits_path: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
     val_df = pd.DataFrame(splits["val"])
     test_df = pd.DataFrame(splits["test"])
     return train_df, val_df, test_df
+
+
+def resolve_test_dataset_paths(
+    test_df: pd.DataFrame,
+    test_dataset_dir: str,
+) -> list[str]:
+    """Map split entries to the portable copy of the test dataset.
+
+    Split files may contain Windows paths from the training machine even when
+    the application runs on Linux, where ``os.path.basename`` does not treat
+    backslashes as separators.
+    """
+    return [
+        os.path.join(
+            test_dataset_dir,
+            row["label"],
+            PureWindowsPath(str(row["path"])).name,
+        )
+        for _, row in test_df.iterrows()
+    ]
 
 
 def print_split_summary(

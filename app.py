@@ -23,7 +23,7 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.data_utils import CLASS_NAMES, load_splits
+from src.data_utils import CLASS_NAMES, load_splits, resolve_test_dataset_paths
 from src.preprocessing import preprocess, apply_gaussian
 from src.features import extract_features, feature_names
 from src.classical import load_classical_models
@@ -189,18 +189,12 @@ def get_splits_data():
         train_df, val_df, test_df = load_splits(splits_path)
 
         test_dataset_dir = os.path.join(PROJECT_ROOT, "test_dataset")
-        test_paths = []
-        for _, row in test_df.iterrows():
-            test_path = os.path.join(
-                test_dataset_dir,
-                row["label"],
-                os.path.basename(row["path"]),
-            )
+        test_paths = resolve_test_dataset_paths(test_df, test_dataset_dir)
+        for test_path in test_paths:
             if not os.path.isfile(test_path):
                 raise FileNotFoundError(
                     f"Imagem do conjunto de teste não encontrada: {test_path}"
                 )
-            test_paths.append(test_path)
 
         test_df = test_df.copy()
         test_df["path"] = test_paths
