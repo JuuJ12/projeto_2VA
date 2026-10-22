@@ -42,6 +42,8 @@ st.set_page_config(
 )
 
 # Estilização CSS personalizada
+# OBS: as classes .card-* vêm ANTES das .badge-* de propósito. Como têm a mesma
+# especificidade, a que vem depois ganha, então os badges mantêm as cores deles.
 st.markdown(
     """
     <style>
@@ -63,6 +65,7 @@ st.markdown(
         padding: 14px 18px;
         text-align: center;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        color: #1E293B;
     }
     .metric-value {
         font-size: 1.8rem;
@@ -75,6 +78,50 @@ st.markdown(
         text-transform: uppercase;
         font-weight: 600;
     }
+
+    /* ---------- Cards claros (texto escuro garantido no tema escuro) ---------- */
+    .card-claro {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        padding: 16px;
+        border-radius: 8px;
+        color: #1E293B !important;
+    }
+    .card-claro * {
+        color: #1E293B;
+    }
+    .card-claro code {
+        color: #0F766E !important;
+        background: #E2E8F0;
+    }
+    .card-diagnostico {
+        margin-top: 15px;
+        padding: 12px 18px;
+        border-radius: 8px;
+        background-color: #EFF6FF;
+        border: 1px solid #BFDBFE;
+        color: #1E293B !important;
+    }
+    .card-diagnostico * {
+        color: #1E293B;
+    }
+    .card-diagnostico code {
+        color: #0F766E !important;
+        background: #DBEAFE;
+    }
+    .card-conclusao {
+        background-color: #F8FAFC;
+        border-left: 4px solid #16A34A;
+        padding: 14px 18px;
+        border-radius: 4px;
+        margin-top: 15px;
+        color: #1E293B !important;
+    }
+    .card-conclusao * {
+        color: #1E293B;
+    }
+
+    /* ---------- Badges (precisam vir DEPOIS dos .card-* ) ---------- */
     .badge-correct {
         background-color: #DCFCE7;
         color: #166534;
@@ -102,12 +149,19 @@ st.markdown(
         font-size: 0.85rem;
         display: inline-block;
     }
+
+    /* ---------- Passo a passo ---------- */
     .step-box {
         background: #F1F5F9;
         border-left: 4px solid #3B82F6;
         padding: 12px 16px;
         border-radius: 4px;
         margin-bottom: 12px;
+        color: #1E293B;
+    }
+    .step-box h4 {
+        color: #1E3A8A;
+        margin-top: 0;
     }
     </style>
     """,
@@ -317,13 +371,13 @@ with tab1:
                     selected_row = class_test_df.iloc[sample_idx]
                     true_label = selected_row["label"]
                     sample_path_info = selected_row["path"]
-                    
+
                     # Garante resolução correta de caminho
                     if not os.path.exists(sample_path_info):
                         candidate = os.path.join(PROJECT_ROOT, selected_row["label"], os.path.basename(sample_path_info))
                         if os.path.exists(candidate):
                             sample_path_info = candidate
-                            
+
                     img_bgr = cv2.imread(sample_path_info)
         else:
             st.warning("Splits não encontrados em results/splits/splits.json.")
@@ -404,7 +458,7 @@ with tab1:
 
             st.markdown(
                 f"""
-                <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:16px; border-radius:8px;">
+                <div class="card-claro">
                     <div style="margin-bottom:12px;">
                         <b>Classificador SVM (Kernel RBF):</b><br>
                         <span style="font-size:1.3rem; font-weight:700; color:#1E3A8A;">{preds["svm_pred"]}</span> &nbsp; {badge_svm}
@@ -434,7 +488,7 @@ with tab1:
         # Coluna CNN
         with pcol2:
             st.markdown("### 🧠 Rede Neural Convolucional (CNN)")
-            
+
             confidence = preds["cnn_probs"][preds["cnn_pred_idx"]] * 100
 
             if true_label is not None:
@@ -446,7 +500,7 @@ with tab1:
 
             st.markdown(
                 f"""
-                <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:16px; border-radius:8px;">
+                <div class="card-claro">
                     <div style="margin-bottom:12px;">
                         <b>MobileNetV2 (Transfer Learning):</b><br>
                         <span style="font-size:1.3rem; font-weight:700; color:#1E3A8A;">{preds["cnn_pred"]}</span> &nbsp; {badge_cnn}
@@ -504,7 +558,7 @@ with tab1:
 
         st.markdown(
             f"""
-            <div style="margin-top:15px; padding:12px 18px; border-radius:8px; background-color:#EFF6FF; border:1px solid #BFDBFE;">
+            <div class="card-diagnostico">
                 💡 <b>Diagnóstico da Comparação:</b><br>
                 • <b>Avaliação:</b> {diag_msg}<br>
                 • <b>Concordância:</b> {'Ambos os modelos concordaram na mesma predição.' if agreement else 'Os modelos divergiram entre si.'}<br>
@@ -521,7 +575,7 @@ with tab1:
         with st.expander("📊 Inspecionar o Vetor de 109 Características Clássicas Desta Imagem"):
             names = feature_names()
             feat_df = pd.DataFrame({"Característica": names, "Valor": preds["features"]})
-            
+
             fcol1, fcol2 = st.columns([1, 1])
             with fcol1:
                 st.markdown("**Valores Numéricos (Primeiros 30 atributos):**")
@@ -772,7 +826,7 @@ with tab3:
     # Análise Conclusiva
     st.markdown(
         """
-        <div style="background-color:#F8FAFC; border-left:4px solid #16A34A; padding:14px 18px; border-radius:4px; margin-top:15px;">
+        <div class="card-conclusao">
             <b>📌 Conclusões Principais do Estudo:</b><br>
             1. <b>Competitividade do Clássico:</b> O SVM alimentado com o vetor de 109 características atingiu <b>94,54% de acurácia</b>, ficando a apenas <b>1,2 ponto percentual</b> da CNN pré-treinada.<br>
             2. <b>Eficiência Extrema:</b> O tempo de inferência do SVM em CPU foi de apenas <b>~0,35 ms por imagem</b> (45× mais rápido que os 15,88 ms da CNN), ideal para aplicações em tempo real e equipamentos de borda.<br>
