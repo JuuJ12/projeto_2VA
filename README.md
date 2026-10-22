@@ -80,10 +80,18 @@ projeto_2VA/
 │   ├── metrics/                # Relatórios de classificação por classe em CSV
 │   ├── models/                 # Modelos salvos (.pkl, .pt)
 │   └── splits/                 # Partição treino/val/teste salva em JSON
+├── test_dataset/               # 751 imagens do conjunto de teste, separadas por jogo
+│   ├── Among Us/                # 75 imagens
+│   ├── God of War/              # 76 imagens
+│   └── ...                      # 75 imagens nas demais classes
 └── report/
     ├── RELATORIO.md            # Relatório técnico completo do projeto
     └── ROTEIRO_APRESENTACAO.md # Estrutura de slides e roteiro do vídeo de 10 min
 ```
+
+As imagens em `test_dataset/` são uma cópia exata dos caminhos registrados na
+partição `test` de `results/splits/splits.json`. Elas foram mantidas separadas
+por classe para facilitar a publicação e a reprodução da avaliação no GitHub.
 
 ---
 

@@ -183,10 +183,27 @@ def get_models():
 
 @st.cache_data
 def get_splits_data():
-    """Carrega as divisões do dataset garantindo resolução correta dos caminhos."""
+    """Carrega os splits e usa a cópia publicada para as imagens de teste."""
     splits_path = os.path.join(PROJECT_ROOT, "results", "splits", "splits.json")
     if os.path.exists(splits_path):
         train_df, val_df, test_df = load_splits(splits_path)
+
+        test_dataset_dir = os.path.join(PROJECT_ROOT, "test_dataset")
+        test_paths = []
+        for _, row in test_df.iterrows():
+            test_path = os.path.join(
+                test_dataset_dir,
+                row["label"],
+                os.path.basename(row["path"]),
+            )
+            if not os.path.isfile(test_path):
+                raise FileNotFoundError(
+                    f"Imagem do conjunto de teste não encontrada: {test_path}"
+                )
+            test_paths.append(test_path)
+
+        test_df = test_df.copy()
+        test_df["path"] = test_paths
         return train_df, val_df, test_df
     return None, None, None
 
@@ -371,12 +388,6 @@ with tab1:
                     selected_row = class_test_df.iloc[sample_idx]
                     true_label = selected_row["label"]
                     sample_path_info = selected_row["path"]
-
-                    # Garante resolução correta de caminho
-                    if not os.path.exists(sample_path_info):
-                        candidate = os.path.join(PROJECT_ROOT, selected_row["label"], os.path.basename(sample_path_info))
-                        if os.path.exists(candidate):
-                            sample_path_info = candidate
 
                     img_bgr = cv2.imread(sample_path_info)
         else:
