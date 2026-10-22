@@ -100,6 +100,9 @@ cd projeto_2VA
 pip install -r requirements.txt
 ```
 
+O arquivo `runtime.txt` fixa o Python 3.13 para manter compatibilidade com as
+dependências nativas de processamento de imagens no Streamlit Cloud.
+
 ### 3. Executar a Interface Gráfica Interativa (Streamlit)
 
 Para abrir a interface visual completa com comparação individual por imagem e resultados:

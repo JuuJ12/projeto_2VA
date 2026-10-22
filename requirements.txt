@@ -3,7 +3,9 @@ numpy>=1.24
 pandas>=2.0
 
 # Image processing and analysis
-opencv-python>=4.8
+# The server does not need GUI support; the headless wheel is more reliable
+# in Streamlit Cloud/Linux environments.
+opencv-python-headless==4.12.0.88
 Pillow>=10.0
 scikit-image>=0.21
 
