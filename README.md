@@ -97,7 +97,7 @@ cd projeto_2VA
 
 ### 2. Instalar as dependências
 ```bash
-pip install numpy opencv-python scikit-image scikit-learn matplotlib pandas torch torchvision streamlit
+pip install -r requirements.txt
 ```
 
 ### 3. Executar a Interface Gráfica Interativa (Streamlit)

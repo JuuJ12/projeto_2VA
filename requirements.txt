@@ -1,0 +1,19 @@
+# Numeric processing and data handling
+numpy>=1.24
+pandas>=2.0
+
+# Image processing and analysis
+opencv-python>=4.8
+Pillow>=10.0
+scikit-image>=0.21
+
+# Classical machine learning
+scikit-learn>=1.3
+
+# Deep learning
+torch>=2.1
+torchvision>=0.16
+
+# Visualization and web interface
+matplotlib>=3.7
+streamlit>=1.28
