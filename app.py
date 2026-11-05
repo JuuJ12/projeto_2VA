@@ -6,6 +6,17 @@ Comparação detalhada entre Processamento Clássico de Imagens e Redes Neurais 
 """
 
 import os
+# Força o uso de apenas 1 thread por biblioteca para evitar deadlock entre PyTorch e OpenCV
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
+# Configura o Matplotlib para modo "sem tela" antes de importar o pyplot
+import matplotlib
+matplotlib.use("Agg")
+
 import sys
 import time
 import json
