@@ -99,15 +99,7 @@ def fourier_radial(img_gray: np.ndarray, n_bands: int = FOURIER_N_BANDS) -> np.n
 
 
 def gradient_features(img_gray: np.ndarray) -> np.ndarray:
-    """
-    Estatísticas de bordas por gradiente espacial (Sobel).
-    Calcula:
-      - Magnitude média do gradiente (intensidade global de bordas)
-      - Desvio padrão da magnitude (variação/contraste de bordas)
-      - Densidade de bordas (fração de pixels com magnitude > limiar)
-      - Histograma de orientações do gradiente ponderado pela magnitude (8 bins: 0 a 180°)
-    Total: 1 + 1 + 1 + 8 = 11 dimensões.
-    """
+    
     gx = cv2.Sobel(img_gray, cv2.CV_64F, 1, 0, ksize=3)
     gy = cv2.Sobel(img_gray, cv2.CV_64F, 0, 1, ksize=3)
     magnitude = np.sqrt(gx**2 + gy**2)

@@ -1,19 +1,14 @@
-"""
-app.py
-======
-Interface Interativa em Streamlit para Classificação de Jogos Eletrônicos.
-Comparação detalhada entre Processamento Clássico de Imagens e Redes Neurais Convolucionais (CNN).
-"""
+
 
 import os
-# Força o uso de apenas 1 thread por biblioteca para evitar deadlock entre PyTorch e OpenCV
+
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
-# Configura o Matplotlib para modo "sem tela" antes de importar o pyplot
+
 import matplotlib
 matplotlib.use("Agg")
 
@@ -29,7 +24,7 @@ import cv2
 import matplotlib.pyplot as plt
 from skimage.feature import local_binary_pattern
 
-# Garante que os módulos locais em 'src' sejam importados
+
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
@@ -42,9 +37,9 @@ from src.cnn import load_cnn_model, EVAL_TRANSFORM
 import torch
 
 
-# ---------------------------------------------------------------------------
-# Configuração da Página
-# ---------------------------------------------------------------------------
+
+
+
 st.set_page_config(
     page_title="Classificação de Jogos — Processamento de Imagens",
     page_icon="🎮",
@@ -52,9 +47,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização CSS personalizada
-# OBS: as classes .card-* vêm ANTES das .badge-* de propósito. Como têm a mesma
-# especificidade, a que vem depois ganha, então os badges mantêm as cores deles.
+
+
+
 st.markdown(
     """
     <style>
@@ -90,7 +85,7 @@ st.markdown(
         font-weight: 600;
     }
 
-    /* ---------- Cards claros (texto escuro garantido no tema escuro) ---------- */
+
     .card-claro {
         background: #F8FAFC;
         border: 1px solid #E2E8F0;
@@ -132,7 +127,7 @@ st.markdown(
         color: #1E293B;
     }
 
-    /* ---------- Badges (precisam vir DEPOIS dos .card-* ) ---------- */
+
     .badge-correct {
         background-color: #DCFCE7;
         color: #166534;
@@ -161,7 +156,7 @@ st.markdown(
         display: inline-block;
     }
 
-    /* ---------- Passo a passo ---------- */
+
     .step-box {
         background: #F1F5F9;
         border-left: 4px solid #3B82F6;
@@ -180,12 +175,12 @@ st.markdown(
 )
 
 
-# ---------------------------------------------------------------------------
-# Funções de Cache de Recursos e Dados
-# ---------------------------------------------------------------------------
+
+
+
 @st.cache_resource
 def get_models():
-    """Carrega os modelos clássicos e a CNN em cache."""
+
     models_dir = os.path.join(PROJECT_ROOT, "results", "models")
     classical_models = load_classical_models(models_dir)
     cnn_model = load_cnn_model(os.path.join(models_dir, "best_cnn.pt"))
@@ -194,7 +189,7 @@ def get_models():
 
 @st.cache_data
 def get_splits_data():
-    """Carrega os splits e usa a cópia publicada para as imagens de teste."""
+
     splits_path = os.path.join(PROJECT_ROOT, "results", "splits", "splits.json")
     if os.path.exists(splits_path):
         train_df, val_df, test_df = load_splits(splits_path)
@@ -215,7 +210,7 @@ def get_splits_data():
 
 @st.cache_data
 def get_metrics_tables():
-    """Carrega os arquivos CSV de métricas por classe."""
+
     metrics = {}
     for name in ["knn", "svm", "cnn"]:
         csv_path = os.path.join(PROJECT_ROOT, "results", "metrics", f"{name}_metrics.csv")
@@ -224,43 +219,35 @@ def get_metrics_tables():
     return metrics
 
 
-# ---------------------------------------------------------------------------
-# Funções de Processamento e Visualização de Imagem Única
-# ---------------------------------------------------------------------------
+
+
+
 def compute_visual_transformations(img_bgr: np.ndarray):
-    """
-    Computa as visualizações intermediárias do pipeline para inspeção visual:
-    1. Imagem Original RGB
-    2. Suavização Gaussiana (NumPy)
-    3. Mapa de Matiz HSV
-    4. Textura LBP
-    5. Magnitude do Gradiente de Sobel
-    6. Espectro de Potência 2D de Fourier
-    """
+
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     img_resized = cv2.resize(img_bgr, (224, 224), interpolation=cv2.INTER_AREA)
 
-    # Suavização Gaussiana (do zero em NumPy)
+
     blurred_bgr = apply_gaussian(img_resized, ksize=5, sigma=1.0)
     blurred_bgr = np.clip(blurred_bgr, 0, 255).astype(np.uint8)
     blurred_rgb = cv2.cvtColor(blurred_bgr, cv2.COLOR_BGR2RGB)
 
-    # Espaço HSV (visualização do canal Hue como colormap)
+
     hsv = cv2.cvtColor(blurred_bgr, cv2.COLOR_BGR2HSV)
     hue_channel = hsv[:, :, 0]
     hue_colormap = cv2.applyColorMap((hue_channel * (255 / 180)).astype(np.uint8), cv2.COLORMAP_HSV)
     hue_colormap_rgb = cv2.cvtColor(hue_colormap, cv2.COLOR_BGR2RGB)
 
-    # Escala de Cinza
+
     gray = cv2.cvtColor(blurred_bgr, cv2.COLOR_BGR2GRAY)
 
-    # LBP
+
     lbp = local_binary_pattern(gray, P=8, R=1, method="uniform")
     lbp_norm = ((lbp / lbp.max()) * 255).astype(np.uint8) if lbp.max() > 0 else lbp.astype(np.uint8)
     lbp_colormap = cv2.applyColorMap(lbp_norm, cv2.COLORMAP_VIRIDIS)
     lbp_rgb = cv2.cvtColor(lbp_colormap, cv2.COLOR_BGR2RGB)
 
-    # Sobel
+
     gx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
     gy = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
     mag = np.sqrt(gx**2 + gy**2)
@@ -268,7 +255,7 @@ def compute_visual_transformations(img_bgr: np.ndarray):
     sobel_colormap = cv2.applyColorMap(mag_norm, cv2.COLORMAP_MAGMA)
     sobel_rgb = cv2.cvtColor(sobel_colormap, cv2.COLOR_BGR2RGB)
 
-    # Fourier 2D
+
     f_shift = np.fft.fftshift(np.fft.fft2(gray.astype(np.float64)))
     magnitude_spectrum = np.log(1 + np.abs(f_shift))
     fft_norm = ((magnitude_spectrum / (magnitude_spectrum.max() + 1e-6)) * 255).astype(np.uint8)
@@ -287,8 +274,8 @@ def compute_visual_transformations(img_bgr: np.ndarray):
 
 
 def predict_single_image(img_bgr_blurred: np.ndarray, classical_models: dict, cnn_model: torch.nn.Module):
-    """Executa a inferência individual no pipeline clássico e na CNN."""
-    # --- Clássico ---
+
+
     t0 = time.time()
     feat = extract_features(img_bgr_blurred)
     feat_scaled = classical_models["scaler"].transform(feat.reshape(1, -1))
@@ -298,7 +285,7 @@ def predict_single_image(img_bgr_blurred: np.ndarray, classical_models: dict, cn
 
     knn_probs = classical_models["knn"].predict_proba(feat_scaled)[0]
 
-    # --- CNN ---
+
     t1 = time.time()
     img_rgb = cv2.cvtColor(img_bgr_blurred, cv2.COLOR_BGR2RGB)
     pil_img = Image.fromarray(img_rgb)
@@ -324,16 +311,16 @@ def predict_single_image(img_bgr_blurred: np.ndarray, classical_models: dict, cn
     }
 
 
-# ---------------------------------------------------------------------------
-# Interface Principal
-# ---------------------------------------------------------------------------
+
+
+
 st.markdown('<div class="main-header">🎮 Classificação de Jogos por Capturas de Tela</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="sub-header"><b>Projeto de Processamento de Imagens</b> — Comparação entre <b>Pipeline Clássico</b> (NumPy, OpenCV, LBP, GLCM, Sobel, Fourier, k-NN/SVM) e <b>Rede Neural Convolucional</b> (MobileNetV2 Transfer Learning).</div>',
     unsafe_allow_html=True,
 )
 
-# Carrega modelos e dados
+
 try:
     classical_models, cnn_model = get_models()
     train_df, val_df, test_df = get_splits_data()
@@ -342,7 +329,7 @@ except Exception as e:
     st.error(f"Erro ao carregar modelos ou dados do projeto: {e}")
     st.stop()
 
-# Navegação por Abas
+
 tab1, tab2, tab3 = st.tabs([
     "🔍 Comparação Individual por Categoria",
     "🛠️ Passo a Passo do Pipeline",
@@ -350,9 +337,9 @@ tab1, tab2, tab3 = st.tabs([
 ])
 
 
-# ===========================================================================
-# ABA 1: COMPARAÇÃO INDIVIDUAL POR CATEGORIA
-# ===========================================================================
+
+
+
 with tab1:
     st.markdown("### Comparação Lado a Lado: Clássico vs. CNN em Imagem Individual")
     st.markdown(
@@ -399,7 +386,7 @@ with tab1:
             st.warning("Splits não encontrados em results/splits/splits.json.")
 
     else:
-        # Modo Upload
+
         col_up1, col_up2 = st.columns([2, 3])
         with col_up1:
             user_declared_game = st.selectbox(
@@ -421,14 +408,14 @@ with tab1:
                 sample_path_info = f"Upload do Usuário: {uploaded_file.name}"
 
     if img_bgr is not None:
-        # Computa transformações e predições
+
         with st.spinner("Processando transformações e executando inferência..."):
             transforms = compute_visual_transformations(img_bgr)
             preds = predict_single_image(transforms["blurred_bgr"], classical_models, cnn_model)
 
-        # -------------------------------------------------------------
-        # 1. Painel Visual das Etapas do Processamento de Imagens
-        # -------------------------------------------------------------
+
+
+
         st.markdown("#### 🔬 Etapas Visuais Intermediárias do Pré-Processamento")
         tcol1, tcol2, tcol3, tcol4, tcol5, tcol6 = st.columns(6)
 
@@ -447,9 +434,9 @@ with tab1:
 
         st.divider()
 
-        # -------------------------------------------------------------
-        # 2. Comparação Direta das Predições
-        # -------------------------------------------------------------
+
+
+
         if true_label is not None:
             st.markdown(f"#### ⚖️ Comparação das Predições (Rótulo Verdadeiro: **{true_label}**)")
         else:
@@ -457,7 +444,7 @@ with tab1:
 
         pcol1, pcol2 = st.columns(2)
 
-        # Coluna Clássico
+
         with pcol1:
             st.markdown("### 🏛️ Pipeline Clássico (109 Features)")
 
@@ -493,7 +480,7 @@ with tab1:
                 unsafe_allow_html=True,
             )
 
-            # Probabilidades k-NN
+
             with st.expander("Ver probabilidades estimadas pelo k-NN (vizinhos mais próximos):"):
                 knn_df = pd.DataFrame({
                     "Jogo": CLASS_NAMES,
@@ -501,7 +488,7 @@ with tab1:
                 }).sort_values(by="Probabilidade (%)", ascending=False)
                 st.dataframe(knn_df, use_container_width=True, hide_index=True)
 
-        # Coluna CNN
+
         with pcol2:
             st.markdown("### 🧠 Rede Neural Convolucional (CNN)")
 
@@ -535,7 +522,7 @@ with tab1:
                 unsafe_allow_html=True,
             )
 
-            # Gráfico de barras com as probabilidades da CNN
+
             with st.expander("Ver distribuição de probabilidades de todas as classes (CNN):", expanded=True):
                 prob_df = pd.DataFrame({
                     "Jogo": CLASS_NAMES,
@@ -554,10 +541,9 @@ with tab1:
                 st.pyplot(fig)
                 plt.close(fig)
 
-        # -------------------------------------------------------------
-        # 3. Card de Diagnóstico e Comparação Relativa
-        # -------------------------------------------------------------
-        ratio_speed = preds["t_cnn_ms"] / max(preds["t_classical_ms"], 1e-3)
+
+
+
         agreement = (preds["svm_pred"] == preds["cnn_pred"])
 
         if true_label is not None:
@@ -578,16 +564,15 @@ with tab1:
                 💡 <b>Diagnóstico da Comparação:</b><br>
                 • <b>Avaliação:</b> {diag_msg}<br>
                 • <b>Concordância:</b> {'Ambos os modelos concordaram na mesma predição.' if agreement else 'Os modelos divergiram entre si.'}<br>
-                • <b>Velocidade Relativa:</b> O pipeline clássico (SVM) executou aproximadamente <b>{ratio_speed:.1f}x mais rápido</b> que o forward pass da CNN nesta imagem.<br>
                 • <b>Origem da Amostra:</b> <code>{sample_path_info}</code>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # -------------------------------------------------------------
-        # 4. Inspecionar o Vetor de Características (109 Dimensões)
-        # -------------------------------------------------------------
+
+
+
         with st.expander("📊 Inspecionar o Vetor de 109 Características Clássicas Desta Imagem"):
             names = feature_names()
             feat_df = pd.DataFrame({"Característica": names, "Valor": preds["features"]})
@@ -609,9 +594,9 @@ with tab1:
         st.info("Envie uma imagem ou certifique-se de selecionar uma categoria válida.")
 
 
-# ===========================================================================
-# ABA 2: PASSO A PASSO DO PIPELINE
-# ===========================================================================
+
+
+
 with tab2:
     st.markdown("### 🛠️ Passo a Passo Metodológico do Projeto")
     st.markdown(
@@ -710,17 +695,17 @@ with tab2:
             st.image(four_path, caption="Assinatura de Frequência Espacial (Fourier 2D) por Jogo ao Longo de 8 Faixas Radiais", use_container_width=True)
 
 
-# ===========================================================================
-# ABA 3: RESULTADOS FINAIS GLOBAIS
-# ===========================================================================
+
+
+
 with tab3:
     st.markdown("### 📊 Resultados Finais e Comparação Quantitativa")
     st.markdown(
         "Desempenho consolidado de todas as abordagens avaliadas sobre as **mesmas 751 capturas de tela** do conjunto de teste independente:"
     )
 
-    # Cards de Métricas Principais
-    mcol1, mcol2, mcol3, mcol4 = st.columns(4)
+
+    mcol1, mcol2, mcol3 = st.columns(3)
 
     with mcol1:
         st.markdown(
@@ -758,21 +743,9 @@ with tab3:
             unsafe_allow_html=True,
         )
 
-    with mcol4:
-        st.markdown(
-            """
-            <div class="metric-card">
-                <div class="metric-label">Vantagem de Velocidade</div>
-                <div class="metric-value">45×</div>
-                <div style="font-size:0.85rem; color:#64748B;">SVM mais rápido que CNN em CPU</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Tabela Resumo Lado a Lado
+
     summary_df = pd.DataFrame({
         "Método": ["k-NN (k=5)", "SVM (Kernel RBF)", "CNN (MobileNetV2)"],
         "Paradigma": ["Clássico (109 features)", "Clássico (109 features)", "Deep Learning (Transfer Learning)"],
@@ -785,7 +758,7 @@ with tab3:
 
     st.divider()
 
-    # Gráfico Comparativo e Curvas de Treino
+
     rcol1, rcol2 = st.columns([1, 1])
 
     with rcol1:
@@ -802,28 +775,7 @@ with tab3:
 
     st.divider()
 
-    # Matrizes de Confusão
-    st.markdown("#### 🎯 Matrizes de Confusão (Normalizadas por Recall)")
-    cm_tab1, cm_tab2, cm_tab3 = st.tabs(["SVM (Clássico)", "CNN (MobileNetV2)", "k-NN (Clássico)"])
 
-    with cm_tab1:
-        cm_svm = os.path.join(PROJECT_ROOT, "results", "figures", "confusion_matriz_de_confusao_-_svm.png")
-        if os.path.exists(cm_svm):
-            st.image(cm_svm, caption="Matriz de Confusão do SVM (Acurácia: 94,54%)", use_container_width=True)
-
-    with cm_tab2:
-        cm_cnn = os.path.join(PROJECT_ROOT, "results", "figures", "confusion_matriz_de_confusao_-_cnn.png")
-        if os.path.exists(cm_cnn):
-            st.image(cm_cnn, caption="Matriz de Confusão da CNN (Acurácia: 95,74%)", use_container_width=True)
-
-    with cm_tab3:
-        cm_knn = os.path.join(PROJECT_ROOT, "results", "figures", "confusion_matriz_de_confusao_-_k-nn.png")
-        if os.path.exists(cm_knn):
-            st.image(cm_knn, caption="Matriz de Confusão do k-NN (Acurácia: 88,81%)", use_container_width=True)
-
-    st.divider()
-
-    # Relatório Detalhado por Classe
     st.markdown("#### 📋 Relatório Detalhado de Métricas por Classe")
     if "svm" in metrics_tables and "cnn" in metrics_tables:
         df_svm = metrics_tables["svm"].loc[CLASS_NAMES, ["precision", "recall", "f1-score"]].copy()
@@ -837,16 +789,15 @@ with tab3:
             "CNN Recall": df_cnn["recall"],
             "CNN F1": df_cnn["f1-score"],
         })
-        st.dataframe(df_combined.style.format("{:.3f}").background_gradient(cmap="Blues", subset=["SVM F1", "CNN F1"]), use_container_width=True)
+        st.dataframe(df_combined.style.format("{:.3f}"), use_container_width=True)
 
-    # Análise Conclusiva
+
     st.markdown(
         """
         <div class="card-conclusao">
             <b>📌 Conclusões Principais do Estudo:</b><br>
             1. <b>Competitividade do Clássico:</b> O SVM alimentado com o vetor de 109 características atingiu <b>94,54% de acurácia</b>, ficando a apenas <b>1,2 ponto percentual</b> da CNN pré-treinada.<br>
-            2. <b>Eficiência Extrema:</b> O tempo de inferência do SVM em CPU foi de apenas <b>~0,35 ms por imagem</b> (45× mais rápido que os 15,88 ms da CNN), ideal para aplicações em tempo real e equipamentos de borda.<br>
-            3. <b>Interpretabilidade:</b> Padrões de acerto e confusão são completamente explicáveis pelos descritores visuais (paleta HSV e geometria de bordas e texturas).
+            2. <b>Interpretabilidade:</b> Padrões de acerto e confusão são completamente explicáveis pelos descritores visuais (paleta HSV e geometria de bordas e texturas).
         </div>
         """,
         unsafe_allow_html=True,

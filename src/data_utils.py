@@ -126,12 +126,7 @@ def resolve_test_dataset_paths(
     test_df: pd.DataFrame,
     test_dataset_dir: str,
 ) -> list[str]:
-    """Map split entries to the portable copy of the test dataset.
-
-    Split files may contain Windows paths from the training machine even when
-    the application runs on Linux, where ``os.path.basename`` does not treat
-    backslashes as separators.
-    """
+    
     return [
         os.path.join(
             test_dataset_dir,

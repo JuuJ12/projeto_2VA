@@ -1,11 +1,4 @@
-"""
-visualize.py
-============
-Geração de gráficos comparativos e análises visuais das características
-extraídas por jogo, atendendo ao item 7 da proposta do projeto:
-"Avaliação e visualização: acurácia, precisão, recall, F1 e matriz de confusão,
-com gráficos das características por jogo."
-"""
+
 
 import os
 import sys
@@ -34,13 +27,7 @@ FIGURES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "results"
 
 
 def generate_feature_visualizations(train_df: pd.DataFrame, n_samples_per_class: int = 30) -> None:
-    """
-    Gera gráficos das distribuições de características para cada um dos 10 jogos:
-    1. Perfil médio de cor (Histograma de Matiz / Hue HSV)
-    2. Comparação de densidade de bordas (Sobel) e contraste (GLCM)
-    3. Perfil de frequência espacial radial (Fourier)
-    4. Amostras visuais pré-processadas (grid 2x5)
-    """
+    
     os.makedirs(FIGURES_DIR, exist_ok=True)
     print(f"[visualize] Coletando amostras ({n_samples_per_class}/classe) para gráficos comparativos...")
 
@@ -60,25 +47,25 @@ def generate_feature_visualizations(train_df: pd.DataFrame, n_samples_per_class:
             if c not in sample_images:
                 sample_images[c] = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
-            # HSV Hue
+            
             hsv = hsv_histogram(bgr)
             hsv_by_class[c].append(hsv[:HSV_H_BINS])
 
-            # Fourier
+            
             four = fourier_radial(gray)
             fourier_by_class[c].append(four)
 
-            # Gradient stats
+            
             grad = gradient_features(gray)
-            edge_densities[c].append(grad[2])  # edge_density
+            edge_densities[c].append(grad[2])  
 
-            # GLCM contrast (primeira propriedade)
+            
             glcm = glcm_features(gray)
             glcm_contrasts[c].append(np.mean(glcm[:4]))
 
-    # -------------------------------------------------------------
-    # 1. Grid com 1 amostra de cada jogo após pré-processamento
-    # -------------------------------------------------------------
+    
+    
+    
     fig, axes = plt.subplots(2, 5, figsize=(15, 6))
     for i, c in enumerate(CLASS_NAMES):
         ax = axes[i // 5, i % 5]
@@ -92,9 +79,9 @@ def generate_feature_visualizations(train_df: pd.DataFrame, n_samples_per_class:
     plt.close(fig)
     print(f"[visualize] Amostras salvas em: {grid_path}")
 
-    # -------------------------------------------------------------
-    # 2. Perfil médio de Matiz (Hue) por jogo
-    # -------------------------------------------------------------
+    
+    
+    
     fig, axes = plt.subplots(5, 2, figsize=(14, 12), sharex=True)
     hue_angles = np.linspace(0, 180, HSV_H_BINS)
     for i, c in enumerate(CLASS_NAMES):
@@ -113,9 +100,9 @@ def generate_feature_visualizations(train_df: pd.DataFrame, n_samples_per_class:
     plt.close(fig)
     print(f"[visualize] Gráficos de HSV salvos em: {hsv_path}")
 
-    # -------------------------------------------------------------
-    # 3. Densidade de Bordas vs Contraste de Textura
-    # -------------------------------------------------------------
+    
+    
+    
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
     mean_edges = [np.mean(edge_densities[c]) for c in CLASS_NAMES]
     mean_contrasts = [np.mean(glcm_contrasts[c]) for c in CLASS_NAMES]
@@ -141,9 +128,9 @@ def generate_feature_visualizations(train_df: pd.DataFrame, n_samples_per_class:
     plt.close(fig)
     print(f"[visualize] Comparação de bordas e textura salva em: {edge_path}")
 
-    # -------------------------------------------------------------
-    # 4. Espectro Radial de Fourier por Jogo
-    # -------------------------------------------------------------
+    
+    
+    
     fig, ax = plt.subplots(figsize=(10, 6))
     bands = np.arange(1, 9)
     for c in CLASS_NAMES:
