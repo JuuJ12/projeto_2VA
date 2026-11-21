@@ -600,7 +600,7 @@ with tab1:
 with tab2:
     st.markdown("### Como o sistema identifica um jogo")
     st.markdown(
-        "Comparamos duas formas de reconhecer os jogos: uma usa medidas de cor, textura e detalhes; "
+        "Comparei duas formas de reconhecer os jogos: uma usa medidas de cor, textura e detalhes; "
         "a outra utiliza uma rede neural pré-treinada. Veja como cada uma funciona:"
     )
 
@@ -611,19 +611,19 @@ with tab2:
             """
             <div class="step-box">
                 <h4>1. Preparar a imagem</h4>
-                • Carregamos a captura de tela e ajustamos seu tamanho para <b>224×224 pixels</b>.<br>
+                • Carreguei a captura de tela e ajustei seu tamanho para <b>224×224 pixels</b>.<br>
                 • Assim, os dois métodos trabalham com imagens do mesmo tamanho.
             </div>
             <div class="step-box">
                 <h4>2. Suavizar pequenas variações</h4>
-                • No método clássico, aplicamos um <b>filtro gaussiano</b>, que produz um leve desfoque.<br>
+                • No método clássico, apliquei um <b>filtro gaussiano</b>, que produz um leve desfoque.<br>
                 • Isso reduz pequenas variações, mas também pode suavizar detalhes finos.<br>
-                • Implementamos esse filtro em NumPy, calculando a suavização nas linhas e nas colunas.
+                • Implementei esse filtro em NumPy, calculando a suavização nas linhas e nas colunas.
             </div>
             <div class="step-box">
                 <h4>3. Medir as cores (HSV)</h4>
-                • Contamos quais cores aparecem na imagem e o quanto elas são intensas ou acinzentadas.<br>
-                • Organizamos essas contagens em <b>histogramas</b>, que resumem a paleta de cores.<br>
+                • Contei quais cores aparecem na imagem e o quanto elas são intensas ou acinzentadas.<br>
+                • Organizei essas contagens em <b>histogramas</b>, que resumem a paleta de cores.<br>
                 • Esse resumo ajuda a comparar o estilo visual dos jogos.
             </div>
             <div class="step-box">
@@ -642,26 +642,26 @@ with tab2:
             <div class="step-box">
                 <h4>5. Medir detalhes com Fourier</h4>
                 • A <b>Transformada de Fourier</b> permite analisar variações suaves e detalhes finos da imagem.<br>
-                • Resumimos essa informação em oito faixas de frequência.<br>
-                • Assim, temos mais uma forma de comparar os padrões visuais dos jogos.
+                • Resumi essa informação em oito faixas de frequência.<br>
+                • Assim, tenho mais uma forma de comparar os padrões visuais dos jogos.
             </div>
             <div class="step-box">
                 <h4>6. Identificar o jogo pelo método clássico</h4>
-                • Reunimos as medidas anteriores em <b>109 números</b> e ajustamos suas escalas.<br>
+                • Reuni as medidas anteriores em <b>109 números</b> e ajustei suas escalas.<br>
                 • O <b>k-NN</b> consulta os cinco exemplos de treino mais parecidos e escolhe o jogo pela maioria.<br>
                 • A <b>SVM</b> aprende a separar os jogos usando essas mesmas medidas.
             </div>
             <div class="step-box">
                 <h4>7. Identificar o jogo com uma rede neural</h4>
                 • A <b>MobileNetV2</b> recebe a imagem, em um caminho separado do método clássico.<br>
-                • Aproveitamos os padrões visuais que ela já aprendeu em outra base de imagens.<br>
-                • Treinamos uma nova camada final para reconhecer os <b>10 jogos</b> do projeto.
+                • Aproveitei os padrões visuais que ela já aprendeu em outra base de imagens.<br>
+                • Treinei uma nova camada final para reconhecer os <b>10 jogos</b> do projeto.
             </div>
             <div class="step-box">
                 <h4>8. Comparar os resultados</h4>
-                • Separamos as imagens em treino, validação e teste.<br>
-                • Avaliamos os três modelos nas <b>mesmas 751 imagens de teste</b>, separadas do treino.<br>
-                • Comparamos os acertos e os erros para entender em quais jogos cada modelo se destaca.
+                • Separei as imagens em treino, validação e teste.<br>
+                • Avaliei os três modelos nas <b>mesmas 751 imagens de teste</b>, separadas do treino.<br>
+                • Comparei os acertos e os erros para entender em quais jogos cada modelo se destaca.
             </div>
             """,
             unsafe_allow_html=True,
