@@ -391,11 +391,11 @@ with tab1:
         with col_up1:
             user_declared_game = st.selectbox(
                 "🎯 Qual é o jogo verdadeiro desta imagem enviada?",
-                options=["🤖 Deixar a IA adivinhar (Classificação Pura)"] + CLASS_NAMES,
+                options=["🤖 Deixar o Modelo Decidir"] + CLASS_NAMES,
                 index=0,
-                help="Se você escolher um jogo específico, o sistema verificará se a IA acertou ou errou. Se escolher 'Deixar a IA adivinhar', ela fará a predição direta.",
+                help="Se você escolher um jogo específico, o sistema verificará se a IA acertou ou errou. Se escolher 'Deixar o Modelo Decidir', ela fará a predição direta.",
             )
-            if user_declared_game != "🤖 Deixar a IA adivinhar (Classificação Pura)":
+            if user_declared_game != "🤖 Deixar o Modelo Decidir":
                 true_label = user_declared_game
             else:
                 true_label = None
@@ -598,9 +598,10 @@ with tab1:
 
 
 with tab2:
-    st.markdown("### 🛠️ Passo a Passo Metodológico do Projeto")
+    st.markdown("### Como o sistema identifica um jogo")
     st.markdown(
-        "O projeto foi estruturado em duas abordagens rigorosamente comparadas sobre o mesmo conjunto de teste de 751 imagens:"
+        "Comparamos duas formas de reconhecer os jogos: uma usa medidas de cor, textura e detalhes; "
+        "a outra utiliza uma rede neural pré-treinada. Veja como cada uma funciona:"
     )
 
     col_step1, col_step2 = st.columns([1, 1])
@@ -609,26 +610,27 @@ with tab2:
         st.markdown(
             """
             <div class="step-box">
-                <h4>1. Aquisição e Redimensionamento</h4>
-                • Leitura em disco via OpenCV (<code>cv2.imread</code>).<br>
-                • Redimensionamento uniforme para <b>224×224 pixels</b> (<code>cv2.INTER_AREA</code>), mantendo proporção dimensional estável entre ambos os métodos.
+                <h4>1. Preparar a imagem</h4>
+                • Carregamos a captura de tela e ajustamos seu tamanho para <b>224×224 pixels</b>.<br>
+                • Assim, os dois métodos trabalham com imagens do mesmo tamanho.
             </div>
             <div class="step-box">
-                <h4>2. Suavização Gaussiana (Implementação do Zero em NumPy)</h4>
-                • Implementado do zero sem <code>cv2.GaussianBlur</code>.<br>
-                • Utiliza a <b>propriedade de separabilidade</b> do kernel 2D em duas convoluções 1D ortogonais (linhas e colunas).<br>
-                • Reduz a complexidade de <code>O(N · k²)</code> para <code>O(N · k)</code> e elimina ruídos de compressão.
+                <h4>2. Suavizar pequenas variações</h4>
+                • No método clássico, aplicamos um <b>filtro gaussiano</b>, que produz um leve desfoque.<br>
+                • Isso reduz pequenas variações, mas também pode suavizar detalhes finos.<br>
+                • Implementamos esse filtro em NumPy, calculando a suavização nas linhas e nas colunas.
             </div>
             <div class="step-box">
-                <h4>3. Processamento no Espaço de Cores (HSV)</h4>
-                • Conversão BGR → HSV para desacoplar cromaticidade de iluminação.<br>
-                • <b>32 bins de Matiz (H)</b> + <b>32 bins de Saturação (S)</b> = 64 dimensões normalizadas, capturando paletas exclusivas de cada jogo.
+                <h4>3. Medir as cores (HSV)</h4>
+                • Contamos quais cores aparecem na imagem e o quanto elas são intensas ou acinzentadas.<br>
+                • Organizamos essas contagens em <b>histogramas</b>, que resumem a paleta de cores.<br>
+                • Esse resumo ajuda a comparar o estilo visual dos jogos.
             </div>
             <div class="step-box">
-                <h4>4. Descritores de Textura e Bordas</h4>
-                • <b>LBP uniforme (10 dims)</b>: microestrutura e invariância à iluminação monotônica ($P=8, R=1$).<br>
-                • <b>GLCM Haralick (16 dims)</b>: contraste, homogeneidade, energia e correlação em 4 direções.<br>
-                • <b>Bordas Sobel (11 dims)</b>: magnitude média, desvio padrão, densidade de arestas e histograma de ângulos em 8 bins.
+                <h4>4. Medir texturas e bordas</h4>
+                • <b>LBP (Local Binary Patterns — Padrões Binários Locais):</b> compara cada pixel com seus vizinhos para identificar pequenos padrões de textura.<br>
+                • <b>GLCM (Gray-Level Co-occurrence Matrix — Matriz de Coocorrência de Níveis de Cinza):</b> conta como tons de cinza aparecem lado a lado, descrevendo diferenças e repetições.<br>
+                • <b>Sobel:</b> destaca mudanças de intensidade para medir a força, a quantidade e a direção das bordas.
             </div>
             """,
             unsafe_allow_html=True,
@@ -638,27 +640,28 @@ with tab2:
         st.markdown(
             """
             <div class="step-box">
-                <h4>5. Transformada de Fourier 2D (FFT)</h4>
-                • Transformada Rápida de Fourier 2D centralizada (<code>np.fft.fft2 + fftshift</code>).<br>
-                • Partição do espectro em <b>8 anéis radiais concêntricos</b>.<br>
-                • Mede a fração de energia de baixas frequências (superfícies lisas) vs. altas frequências (detalhes finos e pixel art).
+                <h4>5. Medir detalhes com Fourier</h4>
+                • A <b>Transformada de Fourier</b> permite analisar variações suaves e detalhes finos da imagem.<br>
+                • Resumimos essa informação em oito faixas de frequência.<br>
+                • Assim, temos mais uma forma de comparar os padrões visuais dos jogos.
             </div>
             <div class="step-box">
-                <h4>6. Classificação Clássica (k-NN e SVM)</h4>
-                • Vetor consolidado de <b>109 características</b> normalizado com <code>StandardScaler</code>.<br>
-                • <b>k-NN ($k=5$)</b>: classificador baseado em instâncias.<br>
-                • <b>SVM (RBF, $C=10$)</b>: separação em espaço de alta dimensão com margem máxima.
+                <h4>6. Identificar o jogo pelo método clássico</h4>
+                • Reunimos as medidas anteriores em <b>109 números</b> e ajustamos suas escalas.<br>
+                • O <b>k-NN</b> consulta os cinco exemplos de treino mais parecidos e escolhe o jogo pela maioria.<br>
+                • A <b>SVM</b> aprende a separar os jogos usando essas mesmas medidas.
             </div>
             <div class="step-box">
-                <h4>7. Abordagem B: CNN (MobileNetV2 Transfer Learning)</h4>
-                • Backbone pré-treinado no ImageNet com parâmetros <b>100% congelados</b>.<br>
-                • Classificador customizado (Dropout 0.2 + Linear 1280→10, apenas 12.810 parâmetros treináveis).<br>
-                • Data Augmentation (flip horizontal e rotação ±10°) com otimizador Adam e Early Stopping.
+                <h4>7. Identificar o jogo com uma rede neural</h4>
+                • A <b>MobileNetV2</b> recebe a imagem, em um caminho separado do método clássico.<br>
+                • Aproveitamos os padrões visuais que ela já aprendeu em outra base de imagens.<br>
+                • Treinamos uma nova camada final para reconhecer os <b>10 jogos</b> do projeto.
             </div>
             <div class="step-box">
-                <h4>8. Avaliação Sob o Mesmo Conjunto de Teste</h4>
-                • Divisão estratificada 70% Treino, 15% Validação, 15% Teste (751 imagens fixas).<br>
-                • Garantia total de ausência de <i>data leakage</i>.
+                <h4>8. Comparar os resultados</h4>
+                • Separamos as imagens em treino, validação e teste.<br>
+                • Avaliamos os três modelos nas <b>mesmas 751 imagens de teste</b>, separadas do treino.<br>
+                • Comparamos os acertos e os erros para entender em quais jogos cada modelo se destaca.
             </div>
             """,
             unsafe_allow_html=True,
