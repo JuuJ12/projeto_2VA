@@ -599,10 +599,7 @@ with tab1:
 
 with tab2:
     st.markdown("### Como o sistema identifica um jogo")
-    st.markdown(
-        "Comparei duas formas de reconhecer os jogos: uma usa medidas de cor, textura e detalhes; "
-        "a outra utiliza uma rede neural pré-treinada. Veja como cada uma funciona:"
-    )
+    st.markdown("Em cada etapa, explico por que usei a técnica e como fiz sua aplicação no projeto.")
 
     col_step1, col_step2 = st.columns([1, 1])
 
@@ -611,26 +608,23 @@ with tab2:
             """
             <div class="step-box">
                 <h4>1. Preparar a imagem</h4>
-                • Carreguei a captura de tela e ajustei seu tamanho para <b>224×224 pixels</b>.<br>
-                • Assim, os dois métodos trabalham com imagens do mesmo tamanho.
+                <p><b>Por que usei:</b> Para padronizar o tamanho das imagens e reduzir o custo do processamento. Assim, os dois métodos recebem imagens com as mesmas dimensões.</p>
+                <p><b>Como fiz:</b> Carreguei as capturas e redimensionei para <b>224×224 pixels</b>. No método clássico, usei o OpenCV com interpolação por área, que combina informações dos pixels ao reduzir a imagem. Esse ajuste deixa a imagem quadrada e altera sua proporção original.</p>
             </div>
             <div class="step-box">
                 <h4>2. Suavizar pequenas variações</h4>
-                • No método clássico, apliquei um <b>filtro gaussiano</b>, que produz um leve desfoque.<br>
-                • Isso reduz pequenas variações, mas também pode suavizar detalhes finos.<br>
-                • Implementei esse filtro em NumPy, calculando a suavização nas linhas e nas colunas.
+                <p><b>Por que usei:</b> Para reduzir pequenas oscilações de intensidade antes de medir texturas e bordas. O filtro produz um leve desfoque, mas também pode apagar detalhes finos.</p>
+                <p><b>Como fiz:</b> Implementei um <b>filtro gaussiano em NumPy</b>, aplicado nas linhas e depois nas colunas. Ele calcula médias ponderadas, dando mais peso aos vizinhos próximos. Usei tamanho <b>5×5</b> e <b>sigma 1</b>, que controla a distribuição desses pesos.</p>
             </div>
             <div class="step-box">
                 <h4>3. Medir as cores (HSV)</h4>
-                • Contei quais cores aparecem na imagem e o quanto elas são intensas ou acinzentadas.<br>
-                • Organizei essas contagens em <b>histogramas</b>, que resumem a paleta de cores.<br>
-                • Esse resumo ajuda a comparar o estilo visual dos jogos.
+                <p><b>Por que usei:</b> Porque a distribuição das cores ajuda a descrever o estilo visual de um jogo. O HSV permite analisar a cor e sua saturação separadamente do canal de brilho.</p>
+                <p><b>Como fiz:</b> Converti a imagem para <b>HSV</b> e contei os pixels em <b>32 faixas de matiz</b> (qual cor) e <b>32 de saturação</b> (intensa ou acinzentada). Juntei e normalizei os histogramas, formando <b>64 valores</b>. Eles mostram a proporção das cores, mas não sua posição na imagem.<br>• <b>H — Matiz:</b> qual é a cor, como vermelho, verde ou azul.<br>• <b>S — Saturação:</b> quanto a cor é viva ou acinzentada.<br>• <b>V — Valor:</b> quanto ela é clara ou escura.<br>Neste projeto, usei os canais <b>H e S</b> para formar os histogramas.</p>
             </div>
             <div class="step-box">
                 <h4>4. Medir texturas e bordas</h4>
-                • <b>LBP (Local Binary Patterns — Padrões Binários Locais):</b> compara cada pixel com seus vizinhos para identificar pequenos padrões de textura.<br>
-                • <b>GLCM (Gray-Level Co-occurrence Matrix — Matriz de Coocorrência de Níveis de Cinza):</b> conta como tons de cinza aparecem lado a lado, descrevendo diferenças e repetições.<br>
-                • <b>Sobel:</b> destaca mudanças de intensidade para medir a força, a quantidade e a direção das bordas.
+                <p><b>Por que usei:</b> Porque jogos com cores parecidas podem ter superfícies, pequenos padrões e contornos diferentes. Essas medidas complementam a informação de cor.</p>
+                <p><b>Como fiz:</b> Usei a imagem em tons de cinza e três técnicas:<br>• <b>LBP (Local Binary Patterns — Padrões Binários Locais):</b> comparei cada pixel com <b>8 vizinhos, no raio 1</b>. Vizinho maior ou igual recebe 1; menor recebe 0. Agrupei os padrões na versão uniforme e contei suas ocorrências em <b>10 valores</b>.<br>• <b>GLCM (Gray-Level Co-occurrence Matrix — Matriz de Coocorrência de Níveis de Cinza):</b> reduzi a imagem a <b>64 tons</b> e contei pares vizinhos em <b>4 direções</b>, à distância de um pixel. Medi contraste, homogeneidade, energia e correlação: <b>16 valores</b>.<br>• <b>Sobel:</b> calculei as mudanças de intensidade nas direções horizontal e vertical com filtros <b>3×3</b>. Resumi sua força média, variação, proporção acima do limiar 30 e oito faixas de orientação: <b>11 valores</b>.</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -641,27 +635,23 @@ with tab2:
             """
             <div class="step-box">
                 <h4>5. Medir detalhes com Fourier</h4>
-                • A <b>Transformada de Fourier</b> permite analisar variações suaves e detalhes finos da imagem.<br>
-                • Resumi essa informação em oito faixas de frequência.<br>
-                • Assim, tenho mais uma forma de comparar os padrões visuais dos jogos.
+                <p><b>Por que usei:</b> Para descrever a distribuição de variações suaves e detalhes finos. Isso complementa as medidas de cor, textura e bordas.</p>
+                <p><b>Como fiz:</b> Apliquei a <b>Transformada de Fourier 2D</b> na imagem em cinza e centralizei as baixas frequências. Calculei a potência, somei os valores em <b>8 faixas em forma de anel</b> e normalizei pela soma dessas faixas. Obtive <b>8 valores</b>: as faixas internas representam frequências mais baixas; as externas, mais altas.</p>
             </div>
             <div class="step-box">
                 <h4>6. Identificar o jogo pelo método clássico</h4>
-                • Reuni as medidas anteriores em <b>109 números</b> e ajustei suas escalas.<br>
-                • O <b>k-NN</b> consulta os cinco exemplos de treino mais parecidos e escolhe o jogo pela maioria.<br>
-                • A <b>SVM</b> aprende a separar os jogos usando essas mesmas medidas.
+                <p><b>Por que usei:</b> Para testar se as características escolhidas permitem distinguir os jogos e comparar dois classificadores usando exatamente as mesmas informações.</p>
+                <p><b>Como fiz:</b> Juntei <b>64 HSV + 10 LBP + 16 GLCM + 8 Fourier + 11 Sobel = 109 valores</b>. Associei cada imagem de treino ao jogo indicado por sua pasta e padronizei as escalas com <b>StandardScaler ajustado somente no treino</b>.<br>• <b>k-NN:</b> usei distância euclidiana e votação entre os <b>5 exemplos mais próximos</b>.<br>• <b>SVM:</b> usei <b>kernel RBF, C=10 e gamma automático (scale)</b> para aprender uma separação não linear entre os jogos.</p>
             </div>
             <div class="step-box">
                 <h4>7. Identificar o jogo com uma rede neural</h4>
-                • A <b>MobileNetV2</b> recebe a imagem, em um caminho separado do método clássico.<br>
-                • Aproveitei os padrões visuais que ela já aprendeu em outra base de imagens.<br>
-                • Treinei uma nova camada final para reconhecer os <b>10 jogos</b> do projeto.
+                <p><b>Por que usei:</b> Para comparar as características escolhidas manualmente com uma representação obtida por uma rede pré-treinada. Escolhi a <b>MobileNetV2</b> por ser uma arquitetura relativamente leve.</p>
+                <p><b>Como fiz:</b> Usei imagens RGB de <b>224×224</b>, normalizadas com as médias e desvios do ImageNet. Mantive os pesos convolucionais congelados e treinei a camada final de <b>1.280 entradas para 10 jogos</b>, com <b>12.810 parâmetros treináveis</b>.<br>• <b>Treino:</b> Adam, taxa <b>0,001</b>, lotes de <b>32 imagens</b> e perda de entropia cruzada.<br>• <b>Para reduzir o sobreajuste:</b> espelhamentos, rotações de até <b>10°</b> e dropout de <b>20%</b>.<br>• <b>Seleção:</b> salvei a menor perda na validação; configurei parada após <b>4 épocas sem melhora</b> na execução principal. A rede recebe a imagem, sem usar o vetor de 109 valores.</p>
             </div>
             <div class="step-box">
                 <h4>8. Comparar os resultados</h4>
-                • Separei as imagens em treino, validação e teste.<br>
-                • Avaliei os três modelos nas <b>mesmas 751 imagens de teste</b>, separadas do treino.<br>
-                • Comparei os acertos e os erros para entender em quais jogos cada modelo se destaca.
+                <p><b>Por que usei:</b> Para medir o desempenho em imagens separadas do treino e observar os pontos fortes e os erros de cada modelo.</p>
+                <p><b>Como fiz:</b> Separei <b>3.499 imagens para treino, 750 para validação e 751 para teste</b>, mantendo proporções próximas entre os jogos. Avaliei os três modelos no mesmo teste.<br>• <b>Acurácia:</b> proporção total de acertos.<br>• <b>Precisão e recall:</b> qualidade das previsões de cada jogo e capacidade de reconhecer suas imagens.<br>• <b>F1-macro:</b> média do equilíbrio entre precisão e recall, com o mesmo peso para cada jogo.</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -670,11 +660,10 @@ with tab2:
     st.markdown("---")
     st.markdown("#### 🖼️ Visualizações Globais das Características do Dataset")
 
-    tab_vis1, tab_vis2, tab_vis3, tab_vis4 = st.tabs([
+    tab_vis1, tab_vis2, tab_vis3 = st.tabs([
         "Grid das 10 Classes Pré-processadas",
         "Assinatura de Cor HSV",
         "Densidade de Bordas vs Textura",
-        "Espectro Radial de Fourier",
     ])
 
     with tab_vis1:
@@ -691,13 +680,6 @@ with tab2:
         edge_path = os.path.join(PROJECT_ROOT, "results", "figures", "feature_edge_texture_comparison.png")
         if os.path.exists(edge_path):
             st.image(edge_path, caption="Densidade Média de Bordas (Sobel) e Contraste de Textura (GLCM) por Jogo", use_container_width=True)
-
-    with tab_vis4:
-        four_path = os.path.join(PROJECT_ROOT, "results", "figures", "feature_fourier_spectrum.png")
-        if os.path.exists(four_path):
-            st.image(four_path, caption="Assinatura de Frequência Espacial (Fourier 2D) por Jogo ao Longo de 8 Faixas Radiais", use_container_width=True)
-
-
 
 
 
